@@ -169,10 +169,11 @@ Configuration::Configuration(int argc, const char *argv[])
         ("train_file",        po::value(&trainingFileList),                                 "sets the *.nc file(s) containing the training sequences")
         ("val_file",          po::value(&validationFileList),                               "sets the *.nc file(s) containing the validation sequences")
         ("test_file",         po::value(&testFileList),                                     "sets the *.nc file(s) containing the test sequences")
-        ("train_fraction",    po::value(&m_trainingFraction)  ->default_value((real_t)1), "sets the fraction of the training set to use")
-        ("val_fraction",      po::value(&m_validationFraction)->default_value((real_t)1), "sets the fraction of the validation set to use")
-        ("test_fraction",     po::value(&m_testFraction)      ->default_value((real_t)1), "sets the fraction of the test set to use")
-        ("truncate_seq",      po::value(&m_truncSeqLength)    ->default_value(0),         "enables training sequence truncation to given maximum length (0 to disable)")
+        ("train_fraction",    po::value(&m_trainingFraction)      ->default_value((real_t)1), "sets the fraction of the training set to use")
+        ("val_fraction",      po::value(&m_validationFraction)    ->default_value((real_t)1), "sets the fraction of the validation set to use")
+        ("test_fraction",     po::value(&m_testFraction)          ->default_value((real_t)1), "sets the fraction of the test set to use")
+        ("truncate_seq",      po::value(&m_truncSeqLength)        ->default_value(0),         "enables training sequence truncation to given maximum length (0 to disable)")
+        ("truncate_val_seq",      po::value(&m_truncValSeqLength) ->default_value(0),         "enables validation sequence truncation to given maximum length (0 to disable)")
         ("input_noise_sigma", po::value(&m_inputNoiseSigma)   ->default_value((real_t)0), "sets the standard deviation of the input noise for training sets")
         ("input_left_context", po::value(&m_inputLeftContext) ->default_value(0), "sets the number of left context frames (first frame is duplicated as necessary)")
         ("input_right_context", po::value(&m_inputRightContext)->default_value(0), "sets the number of right context frames (last frame is duplicated as necessary)")
@@ -582,6 +583,11 @@ unsigned Configuration::outputFeatureKind() const
 unsigned Configuration::truncateSeqLength() const
 {
     return m_truncSeqLength;
+}
+
+unsigned Configuration::truncateValSeqLength() const
+{
+    return m_truncValSeqLength;
 }
 
 const std::vector<std::string>& Configuration::feedForwardInputFiles() const

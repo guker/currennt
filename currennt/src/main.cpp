@@ -599,6 +599,7 @@ boost::shared_ptr<data_sets::DataSet> loadDataSet(data_set_type dsType)
         filenames = Configuration::instance().validationFiles();
         fraction = Configuration::instance().validationFraction();
         cachePath = Configuration::instance().cachePath();
+        truncSeqLength = Configuration::instance().truncateValSeqLength();
         break;
 
     case DATA_SET_TEST:

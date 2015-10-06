@@ -71,6 +71,7 @@ private:
     bool m_revertStd;
 
     unsigned m_truncSeqLength;
+    unsigned m_truncValSeqLength;
     unsigned m_parallelSequences;
     unsigned m_maxEpochs;
     unsigned m_maxEpochsNoBest;
@@ -305,6 +306,15 @@ public:
      * @return sequence truncation length
      */
     unsigned truncateSeqLength() const;
+
+    /**
+     * Returns the sequence length to which the validation set is truncated
+     *
+     * @return sequence truncation length
+     */
+    unsigned truncateValSeqLength() const;
+
+
 
     /**
      * Returns the distribution type of the initial weights
