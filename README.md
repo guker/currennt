@@ -1,6 +1,6 @@
-# Currennt 'CUDA-enabled machine learning library for recurrent neural networks'
+# CURRENNT
 This is in the internal ONT copy of the [CURRENNT](http://sourceforge.net/projects/currennt/)
-software, branched from 0.2-RC1.
+software for training and applying recurrent neural networks, branched from 0.2-RC1.
 
 Project [README](README)
 
