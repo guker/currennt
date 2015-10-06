@@ -152,8 +152,10 @@ Configuration::Configuration(int argc, const char *argv[])
         ("optimizer",           po::value(&optimizerString)    ->default_value("steepest_descent"),    "sets the optimizer used for updating the weights")
         ("learning_rate",       po::value(&m_learningRate)     ->default_value((real_t)1e-5, "1e-5"),  "sets the learning rate for the steepest descent optimizer")
         ("momentum",            po::value(&m_momentum)         ->default_value((real_t)0.9,  "0.9"),   "sets the momentum for the steepest descent optimizer")
-        ("weight_noise_sigma",  po::value(&m_weightNoiseSigma)  ->default_value((real_t)0), "sets the standard deviation of the weight noise added for the gradient calculation on every batch")
+        ("weight_noise_sigma",  po::value(&m_weightNoiseSigma) ->default_value((real_t)0), "sets the standard deviation of the weight noise added for the gradient calculation on every batch")
         ("save_network",        po::value(&m_trainedNetwork)   ->default_value("trained_network.jsn"), "sets the file name of the trained network that will be produced")
+        ("elastic_alpha",       po::value(&m_alpha)            ->default_value(0.0),                   "sets alpha (L2-norm) parameter of elastic net penalty")
+        ("elastic_beta",        po::value(&m_beta)             ->default_value(0.0),                   "sets beta (L1-norm) parameter of elastic net penalty")
         ;
 
     po::options_description autosaveOptions("Autosave options");
@@ -573,6 +575,16 @@ Configuration::feedforwardformat_type_t Configuration::feedForwardFormat() const
 real_t Configuration::featurePeriod() const
 {
     return m_featurePeriod;
+}
+
+real_t Configuration::alpha() const
+{
+    return m_alpha;
+}
+
+real_t Configuration::beta() const
+{
+    return m_beta;
 }
 
 unsigned Configuration::outputFeatureKind() const

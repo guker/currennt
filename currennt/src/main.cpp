@@ -181,7 +181,7 @@ int trainerMain(const Configuration &config)
                 sdo = new optimizers::SteepestDescentOptimizer<TDevice>(
                     neuralNetwork, *trainingSet, *validationSet, *testSet,
                     config.maxEpochs(), config.maxEpochsNoBest(), config.validateEvery(), config.testEvery(),
-                    config.learningRate(), config.momentum()
+                    config.learningRate(), config.momentum(), config.alpha(), config.beta()
                     );
                 optimizer.reset(sdo);
                 break;
@@ -677,6 +677,7 @@ void fprintOptimizer(FILE * fp, const Configuration &config, const optimizers::O
         fprintf(fp, "Test error every:          %d\n", config.testEvery());
         fprintf(fp, "Learning rate:             %g\n", (double)config.learningRate());
         fprintf(fp, "Momentum:                  %g\n", (double)config.momentum());
+        fprintf(fp, "Elastic net:               %g %g\n", (double)config.alpha(), (double)config.beta());
         fprintf(fp, "\n");
     }
 }

@@ -30,10 +30,36 @@
 #include <limits>
 
 #include <thrust/transform.h>
+#include <thrust/transform_reduce.h>
 
+namespace thrust {
+    template <typename floatT>
+    struct elasticnet_dfunctor {
+        const floatT a;
+        const floatT b;
+        elasticnet_dfunctor(floatT _a, floatT _b) : a(_a), b(_b) {}
+
+        __host__ __device__
+            floatT operator()(const floatT& x, const floatT& y) const {
+                return a * x + copysign(b, x) + y;
+            }
+    };
+
+    template <typename floatT>
+    struct elasticnet_functor {
+        const floatT a;
+        const floatT b;
+        elasticnet_functor(floatT _a, floatT _b) : a(_a), b(_b) {}
+
+        __host__ __device__
+            floatT operator()(const floatT& x) const {
+                return a * x * x + b * fabs(x);
+            }
+    };
+
+}
 
 namespace optimizers {
-
     template <typename TDevice>
     real_t Optimizer<TDevice>::_processDataSet(data_sets::DataSet &ds, bool calcWeightUpdates, real_t *classError)
     {
@@ -57,7 +83,7 @@ namespace optimizers {
             if (calcWeightUpdates) {
                 // weight noise:
                 std::vector<Cpu::real_vector> origWeights(m_neuralNetwork.layers().size());
-                if (Configuration::instance().weightNoiseSigma() > 0) {
+                if (Configuration::instance().weightNoiseSigma() > 0.0) {
                     for (size_t i = 1; i < m_neuralNetwork.layers().size()-1; ++i) {
                         layers::TrainableLayer<TDevice> *layer = dynamic_cast<layers::TrainableLayer<TDevice>*>(m_neuralNetwork.layers()[i].get());
                         if (layer) {
@@ -92,6 +118,14 @@ namespace optimizers {
             firstFraction = false;
         }
 
+        // Add elastic-net penalty terms
+        for (size_t i = 1; i < m_neuralNetwork.layers().size()-1; ++i) {
+            layers::TrainableLayer<TDevice> *layer = dynamic_cast<layers::TrainableLayer<TDevice>*>(m_neuralNetwork.layers()[i].get());
+            if (!layer)
+                continue;
+            thrust::transform(layer->weights().begin(), layer->weights().end(), m_curWeightUpdates[i].begin(), m_curWeightUpdates[i].begin(), thrust::elasticnet_dfunctor<real_t>(m_alpha, m_beta));
+            error += thrust::transform_reduce(layer->weights().begin(), layer->weights().end(), thrust::elasticnet_functor<real_t>(m_alpha, m_beta), 0.0, thrust::plus<real_t>());
+        }
         // update weights for batch learning
         if (calcWeightUpdates && !Configuration::instance().hybridOnlineBatch())
             _updateWeights();
@@ -183,7 +217,8 @@ namespace optimizers {
     template <typename TDevice>
     Optimizer<TDevice>::Optimizer(NeuralNetwork<TDevice> &neuralNetwork, data_sets::DataSet &trainingSet, 
                                    data_sets::DataSet &validationSet, data_sets::DataSet &testSet,
-                                   int maxEpochs, int maxEpochsNoBest, int validateEvery, int testEvery)
+                                   int maxEpochs, int maxEpochsNoBest, int validateEvery, int testEvery,
+                                   real_t alpha, real_t beta)
         : m_neuralNetwork             (neuralNetwork)
         , m_trainingSet               (trainingSet)
         , m_validationSet             (validationSet)
@@ -202,6 +237,8 @@ namespace optimizers {
         , m_curValidationClassError   (0)
         , m_curTrainingClassError     (0)
         , m_curTestClassError         (0)
+        , m_alpha                     (alpha)
+        , m_beta                      (beta)
     {
         // initialize the best weights vectors
         m_bestWeights.resize(m_neuralNetwork.layers().size());

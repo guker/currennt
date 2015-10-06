@@ -97,8 +97,8 @@ namespace optimizers {
     SteepestDescentOptimizer<TDevice>::SteepestDescentOptimizer(
         NeuralNetwork<TDevice> &neuralNetwork, data_sets::DataSet &trainingSet, data_sets::DataSet &validationSet,
         data_sets::DataSet &testSet, int maxEpochs, int maxEpochsNoBest, int validateEvery, int testEvery, 
-        real_t learningRate, real_t momentum)
-        : Optimizer<TDevice>(neuralNetwork, trainingSet, validationSet, testSet, maxEpochs, maxEpochsNoBest, validateEvery, testEvery)
+        real_t learningRate, real_t momentum, real_t alpha, real_t beta)
+        : Optimizer<TDevice>(neuralNetwork, trainingSet, validationSet, testSet, maxEpochs, maxEpochsNoBest, validateEvery, testEvery, alpha, beta)
         , m_learningRate    (learningRate)
         , m_learningRateFirst(learningRate)
         , m_momentum        (momentum)

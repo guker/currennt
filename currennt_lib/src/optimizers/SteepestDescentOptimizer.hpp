@@ -76,7 +76,9 @@ namespace optimizers {
             int validateEvery,
             int testEvery,
             real_t learningRate,
-            real_t momentum
+            real_t momentum,
+            real_t alpha,
+            real_t beta
             );
 
         /**

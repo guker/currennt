@@ -60,6 +60,8 @@ namespace optimizers {
         real_t m_curValidationClassError;
         real_t m_curTrainingClassError;
         real_t m_curTestClassError;
+        real_t m_alpha;
+        real_t m_beta;
 
         std::vector<real_vector> m_curWeightUpdates;
         std::vector<real_vector> m_bestWeights;
@@ -89,6 +91,8 @@ namespace optimizers {
          *                        achieved before training is stopped
          * @param validateEvery   After how many epochs the validation error shall be calculated
          * @param testEvery       After how many epochs the test error shall be calculated
+         * @param alpha           Parameter for L2-norm of elastic net
+         * @param beta            Parameter for L1-norm of elastic net
          */
         Optimizer(
             NeuralNetwork<TDevice> &neuralNetwork,
@@ -98,7 +102,9 @@ namespace optimizers {
             int maxEpochs, 
             int maxEpochsNoBest,
             int validateEvery,
-            int testEvery
+            int testEvery,
+            real_t alpha,
+            real_t beta
             );
 
         /**

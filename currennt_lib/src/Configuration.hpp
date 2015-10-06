@@ -92,6 +92,8 @@ private:
     real_t m_validationFraction;
     real_t m_testFraction;
     real_t m_featurePeriod;
+    real_t m_alpha;
+    real_t m_beta;
 
     int m_inputLeftContext;
     int m_inputRightContext;
@@ -439,6 +441,20 @@ public:
      * @return the feature period in seconds (only for HTK output)
      */
     real_t featurePeriod() const;
+
+    /**
+     * Returns the alpha (L2-norm) parameter for elastic net penalty
+     *
+     * @return the alpha (L2-norm) parameter for elastic net penalty
+     */
+    real_t alpha() const;
+
+    /**
+     * Returns the beta (L1-norm) parameter for elastic net penalty
+     *
+     * @return the beta (L1-norm) parameter for elastic net penalty
+     */
+    real_t beta() const;
 
     /**
      * Returns the path to the forward pass input file
