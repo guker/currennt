@@ -219,17 +219,17 @@ Configuration::Configuration(int argc, const char *argv[])
     }
     catch (const std::exception &e) {
         if (!vm.count("help"))
-            std::cout << "Error while parsing the command line and/or options file: " << e.what() << std::endl;
+            std::cerr << "Error while parsing the command line and/or options file: " << e.what() << std::endl;
 
-        std::cout << "Usage: currennt [options] [options-file]" << std::endl;
-        std::cout << visibleOptions;
+        std::cerr << "Usage: currennt [options] [options-file]" << std::endl;
+        std::cerr << visibleOptions;
 
         exit(vm.count("help") ? 0 : 1);
     }
 
     if (vm.count("help")) {
-        std::cout << "Usage: currennt [options] [options-file]" << std::endl;
-        std::cout << visibleOptions;
+        std::cerr << "Usage: currennt [options] [options-file]" << std::endl;
+        std::cerr << visibleOptions;
 
         exit(0);
     }
@@ -244,7 +244,7 @@ Configuration::Configuration(int argc, const char *argv[])
             po::notify(vm);
         }
         catch (const std::exception &e) {
-            std::cout << "Error while restoring configuration from autosave file: " << e.what() << std::endl;
+            std::cerr << "Error while restoring configuration from autosave file: " << e.what() << std::endl;
 
             exit(1);
         }
@@ -268,7 +268,7 @@ Configuration::Configuration(int argc, const char *argv[])
     else if (optimizerString == "steepest_descent")
         m_optimizer = OPTIMIZER_STEEPESTDESCENT;
     else {
-        std::cout << "ERROR: Invalid optimizer. Possible values: steepest_descent, rprop." << std::endl;
+        std::cerr << "ERROR: Invalid optimizer. Possible values: steepest_descent, rprop." << std::endl;
         exit(1);
     }
 
@@ -282,7 +282,7 @@ Configuration::Configuration(int argc, const char *argv[])
     else if (weightsDistString == "uniform")
         m_weightsDistribution = DISTRIBUTION_UNIFORM;
     else {
-        std::cout << "ERROR: Invalid initial weights distribution type. Possible values: normal, uniform." << std::endl;
+        std::cerr << "ERROR: Invalid initial weights distribution type. Possible values: normal, uniform." << std::endl;
         exit(1);
     }
 
@@ -294,80 +294,80 @@ Configuration::Configuration(int argc, const char *argv[])
     else if (feedForwardFormatString == "htk")
         m_feedForwardFormat = FORMAT_HTK;
     else {
-        std::cout << "ERROR: Invalid feedforward format string. Possible values: single_csv, csv, htk." << std::endl;
+        std::cerr << "ERROR: Invalid feedforward format string. Possible values: single_csv, csv, htk." << std::endl;
         exit(1);
     }
 
     // check data sets fractions
     if (m_trainingFraction <= 0 || 1 < m_trainingFraction) {
-        std::cout << "ERROR: Invalid training set fraction. Should be 0 < x <= 1" << std::endl;
+        std::cerr << "ERROR: Invalid training set fraction. Should be 0 < x <= 1" << std::endl;
         exit(1);
     }
     if (m_validationFraction <= 0 || 1 < m_validationFraction) {
-        std::cout << "ERROR: Invalid validation set fraction. Should be 0 < x <= 1" << std::endl;
+        std::cerr << "ERROR: Invalid validation set fraction. Should be 0 < x <= 1" << std::endl;
         exit(1);
     }
     if (m_testFraction <= 0 || 1 < m_testFraction) {
-        std::cout << "ERROR: Invalid test set fraction. Should be 0 < x <= 1" << std::endl;
+        std::cerr << "ERROR: Invalid test set fraction. Should be 0 < x <= 1" << std::endl;
         exit(1);
     }
 
     // print information about active command line options
     if (m_trainingMode) {
-        std::cout << "Started in " << (m_hybridOnlineBatch ? "hybrid online/batch" : "batch") << " training mode." << std::endl;
+        std::cerr << "Started in " << (m_hybridOnlineBatch ? "hybrid online/batch" : "batch") << " training mode." << std::endl;
 
         if (m_shuffleFractions)
-            std::cout << "Mini-batches (" << m_parallelSequences << " sequences each) will be shuffled during training." << std::endl;
+            std::cerr << "Mini-batches (" << m_parallelSequences << " sequences each) will be shuffled during training." << std::endl;
         if (m_shuffleSequences)
-            std::cout << "Sequences will be shuffled within and across mini-batches during training." << std::endl;
+            std::cerr << "Sequences will be shuffled within and across mini-batches during training." << std::endl;
         if (m_inputNoiseSigma != (real_t)0)
-            std::cout << "Using input noise with a standard deviation of " << m_inputNoiseSigma << "." << std::endl;
+            std::cerr << "Using input noise with a standard deviation of " << m_inputNoiseSigma << "." << std::endl;
 
-        std::cout << "The trained network will be written to '" << m_trainedNetwork << "'." << std::endl;
+        std::cerr << "The trained network will be written to '" << m_trainedNetwork << "'." << std::endl;
         if (boost::filesystem::exists(m_trainedNetwork))
-            std::cout << "WARNING: The output file '" << m_trainedNetwork << "' already exists. It will be overwritten!" << std::endl;
+            std::cerr << "WARNING: The output file '" << m_trainedNetwork << "' already exists. It will be overwritten!" << std::endl;
     }
     else {
-        std::cout << "Started in forward pass mode." << std::endl;
+        std::cerr << "Started in forward pass mode." << std::endl;
 
-        std::cout << "The forward pass output will be written to '" << m_feedForwardOutputFile << "'." << std::endl;
+        std::cerr << "The forward pass output will be written to '" << m_feedForwardOutputFile << "'." << std::endl;
         if (boost::filesystem::exists(m_feedForwardOutputFile))
-            std::cout << "WARNING: The output file '" << m_feedForwardOutputFile << "' already exists. It will be overwritten!" << std::endl;
+            std::cerr << "WARNING: The output file '" << m_feedForwardOutputFile << "' already exists. It will be overwritten!" << std::endl;
     }
 
     if (m_trainingMode && !m_validationFiles.empty())
-        std::cout << "Validation error will be calculated every " << m_validateEvery << " epochs." << std::endl;
+        std::cerr << "Validation error will be calculated every " << m_validateEvery << " epochs." << std::endl;
     if (m_trainingMode && !m_testFiles.empty())
-        std::cout << "Test error will be calculated every " << m_testEvery << " epochs." << std::endl;
+        std::cerr << "Test error will be calculated every " << m_testEvery << " epochs." << std::endl;
 
     if (m_trainingMode) {
-        std::cout << "Training will be stopped";
+        std::cerr << "Training will be stopped";
         if (m_maxEpochs != std::numeric_limits<unsigned>::max())
-            std::cout << " after " << m_maxEpochs << " epochs or";
-        std::cout << " if there is no new lowest validation error within " << m_maxEpochsNoBest << " epochs." << std::endl;
+            std::cerr << " after " << m_maxEpochs << " epochs or";
+        std::cerr << " if there is no new lowest validation error within " << m_maxEpochsNoBest << " epochs." << std::endl;
     }
     
     if (m_autosave) {
-        std::cout << "Autosave after EVERY EPOCH enabled." << std::endl;
+        std::cerr << "Autosave after EVERY EPOCH enabled." << std::endl;
     }
     if (m_autosaveBest) {
-        std::cout << "Autosave on BEST VALIDATION ERROR enabled." << std::endl;
+        std::cerr << "Autosave on BEST VALIDATION ERROR enabled." << std::endl;
     }
 
     if (m_useCuda)
-        std::cout << "Utilizing the GPU for computations with " << m_parallelSequences << " sequences in parallel." << std::endl;
+        std::cerr << "Utilizing the GPU for computations with " << m_parallelSequences << " sequences in parallel." << std::endl;
     else
-        std::cout << "WARNING: CUDA option not set. Computations will be performed on the CPU!" << std::endl;
+        std::cerr << "WARNING: CUDA option not set. Computations will be performed on the CPU!" << std::endl;
 
     if (m_trainingMode) {
         if (m_weightsDistribution == DISTRIBUTION_NORMAL)
-            std::cout << "Normal distribution with mean=" << m_weightsNormalMean << " and sigma=" << m_weightsNormalSigma;
+            std::cerr << "Normal distribution with mean=" << m_weightsNormalMean << " and sigma=" << m_weightsNormalSigma;
         else
-            std::cout << "Uniform distribution with range [" << m_weightsUniformMin << ", " << m_weightsUniformMax << "]";
-        std::cout << ". Random seed: " << m_randomSeed << std::endl;
+            std::cerr << "Uniform distribution with range [" << m_weightsUniformMin << ", " << m_weightsUniformMax << "]";
+        std::cerr << ". Random seed: " << m_randomSeed << std::endl;
     }
 
-    std::cout << std::endl;
+    std::cerr << std::endl;
 }
 
 Configuration::~Configuration()

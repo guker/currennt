@@ -84,13 +84,13 @@ enum data_set_type
 // helper functions (implementation below)
 void readJsonFile(rapidjson::Document *doc, const std::string &filename);
 boost::shared_ptr<data_sets::DataSet> loadDataSet(data_set_type dsType);
-template <typename TDevice> void printLayers(const NeuralNetwork<TDevice> &nn);
-template <typename TDevice> void printOptimizer(const optimizers::Optimizer<TDevice> &optimizer);
+template <typename TDevice> void fprintLayers(FILE * fp, const NeuralNetwork<TDevice> &nn);
+template <typename TDevice> void fprintOptimizer(FILE * fp, const optimizers::Optimizer<TDevice> &optimizer);
 template <typename TDevice> void saveNetwork(const NeuralNetwork<TDevice> &nn, const std::string &filename);
 void createModifiedTrainingSet(data_sets::DataSet *trainingSet, int parallelSequences, bool outputsToClasses, boost::mutex &swapTrainingSetsMutex);
 template <typename TDevice> void saveState(const NeuralNetwork<TDevice> &nn, const optimizers::Optimizer<TDevice> &optimizer, const std::string &infoRows);
 template <typename TDevice> void restoreState(NeuralNetwork<TDevice> *nn, optimizers::Optimizer<TDevice> *optimizer, std::string *infoRows);
-std::string printfRow(const char *format, ...);
+std::string fprintfRow(FILE * fp, const char *format, ...);
 
 
 // main function
@@ -100,12 +100,12 @@ int trainerMain(const Configuration &config)
     try {
         // read the neural network description file 
         std::string networkFile = config.continueFile().empty() ? config.networkFile() : config.continueFile();
-        printf("Reading network from '%s'... ", networkFile.c_str());
-        fflush(stdout);
+        fprintf( stderr, "Reading network from '%s'... ", networkFile.c_str());
+        fflush(stderr);
         rapidjson::Document netDoc;
         readJsonFile(&netDoc, networkFile);
-        printf("done.\n");
-        printf("\n");
+        fprintf( stderr, "done.\n");
+        fprintf( stderr, "\n");
 
         // load data sets
         boost::shared_ptr<data_sets::DataSet> trainingSet    = boost::make_shared<data_sets::DataSet>();
@@ -140,7 +140,7 @@ int trainerMain(const Configuration &config)
         // trainingSet->outputPatternSize
 
         // create the neural network
-        printf("Creating the neural network... ");
+        fprintf(stderr, "Creating the neural network... ");
         fflush(stdout);
         int inputSize = -1;
         int outputSize = -1;
@@ -155,10 +155,10 @@ int trainerMain(const Configuration &config)
         if (!testSet->empty() && testSet->outputPatternSize() != neuralNetwork.postOutputLayer().size())
             throw std::runtime_error("Post output layer size != target pattern size of the test set");
 
-        printf("done.\n");
-        printf("Layers:\n");
-        printLayers(neuralNetwork);
-        printf("\n");
+        fprintf(stderr, "done.\n");
+        fprintf(stderr, "Layers:\n");
+        fprintLayers(stderr, neuralNetwork);
+        fprintf(stderr, "\n");
 
         // check if this is a classification task
         bool classificationTask = false;
@@ -167,11 +167,11 @@ int trainerMain(const Configuration &config)
                 classificationTask = true;
         }
 
-        printf("\n");
+        fprintf(stderr, "\n");
 
         // create the optimizer
         if (config.trainingMode()) {
-            printf("Creating the optimizer... ");
+            fprintf(stderr, "Creating the optimizer... ");
             fflush(stdout);
             boost::scoped_ptr<optimizers::Optimizer<TDevice> > optimizer;
             optimizers::SteepestDescentOptimizer<TDevice> *sdo;
@@ -190,67 +190,70 @@ int trainerMain(const Configuration &config)
                 throw std::runtime_error("Unknown optimizer type");
             }
 
-            printf("done.\n");
-            printOptimizer(config, *optimizer);
+            fprintf(stderr, "done.\n");
+            fprintOptimizer(stderr, config, *optimizer);
 
             std::string infoRows;
 
             // continue from autosave?
             if (!config.continueFile().empty()) {
-                printf("Restoring state from '%s'... ", config.continueFile().c_str());
+                fprintf(stderr, "Restoring state from '%s'... ", config.continueFile().c_str());
                 fflush(stdout);
                 restoreState(&neuralNetwork, &*optimizer, &infoRows);
-                printf("done.\n\n");
+                fprintf(stderr, "done.\n\n");
             }
 
             // train the network
-            printf("Starting training...\n");
-            printf("\n");
+            fprintf(stderr, "Starting training...\n");
+            fprintf(stderr, "\n");
 
-            printf(" Epoch | Duration |  Training error  | Validation error |    Test error    | New best \n");
-            printf("-------+----------+------------------+------------------+------------------+----------\n");
+            if (classificationTask){
+                printf("Epoch\tDuration\tTrainMisclassified\tTrainingError\tValidationMisclassified\tValidationError\tTestMisclassified\tTestError\tNewBest\n");
+            } else {
+                printf("Epoch\tDuration\tTrainingError\tValidationError\tTestError\tNewBest\n");
+            }
             std::cout << infoRows;
 
             bool finished = false;
             while (!finished) {
-                const char *errFormat = (classificationTask ? "%6.2lf%%%10.3lf |" : "%17.3lf |");
-                const char *errSpace  = "                  |";
+                const char *errFormat = (classificationTask ? "%.2lf\t%.2f\t" : "%f\t");
+                const char *errSpace  = (classificationTask ? "\t\t" : "\t");
 
                 // train for one epoch and measure the time
-                infoRows += printfRow(" %5d | ", optimizer->currentEpoch() + 1);
+                infoRows += fprintfRow(stdout, "%d\t", optimizer->currentEpoch() + 1);
                 
                 boost::posix_time::ptime startTime = boost::posix_time::microsec_clock::local_time();
                 finished = optimizer->train();
                 boost::posix_time::ptime endTime = boost::posix_time::microsec_clock::local_time();
                 double duration = (double)(endTime - startTime).total_milliseconds() / 1000.0;
 
-                infoRows += printfRow("%8.1lf |", duration);
+                infoRows += fprintfRow(stdout, "%.1lf\t", duration);
                 if (classificationTask)
-                    infoRows += printfRow(errFormat, (double)optimizer->curTrainingClassError()*100.0, (double)optimizer->curTrainingError());
+                    infoRows += fprintfRow(stdout, errFormat, (double)optimizer->curTrainingClassError()*100.0, (double)optimizer->curTrainingError());
                 else
-                    infoRows += printfRow(errFormat, (double)optimizer->curTrainingError());
+                    infoRows += fprintfRow(stdout, errFormat, (double)optimizer->curTrainingError());
                 
                 if (!validationSet->empty() && optimizer->currentEpoch() % config.validateEvery() == 0) {
                     if (classificationTask)
-                        infoRows += printfRow(errFormat, (double)optimizer->curValidationClassError()*100.0, (double)optimizer->curValidationError());
+                        infoRows += fprintfRow(stdout, errFormat, (double)optimizer->curValidationClassError()*100.0, (double)optimizer->curValidationError());
                     else
-                        infoRows += printfRow(errFormat, (double)optimizer->curValidationError());
+                        infoRows += fprintfRow(stdout, errFormat, (double)optimizer->curValidationError());
                 }
                 else
-                    infoRows += printfRow("%s", errSpace);
+                    infoRows += fprintfRow(stdout, "%s", errSpace);
 
                 if (!testSet->empty() && optimizer->currentEpoch() % config.testEvery() == 0) {
                     if (classificationTask)
-                        infoRows += printfRow(errFormat, (double)optimizer->curTestClassError()*100.0, (double)optimizer->curTestError());
+                        infoRows += fprintfRow(stdout, errFormat, (double)optimizer->curTestClassError()*100.0, (double)optimizer->curTestError());
                     else
-                        infoRows += printfRow(errFormat, (double)optimizer->curTestError());
+                        infoRows += fprintfRow(stdout, errFormat, (double)optimizer->curTestError());
                 }
                 else
-                    infoRows += printfRow("%s", errSpace);
+                    infoRows += fprintfRow(stdout, "%s", errSpace);
 
                 if (!validationSet->empty() && optimizer->currentEpoch() % config.validateEvery() == 0) {
                     if (optimizer->epochsSinceLowestValidationError() == 0) {
-                        infoRows += printfRow("  yes   \n");
+                        infoRows += fprintfRow(stdout, "yes\n");
                         if (config.autosaveBest()) {
                             std::stringstream saveFileS;
                             if (config.autosavePrefix().empty()) {
@@ -267,35 +270,35 @@ int trainerMain(const Configuration &config)
                         }
                     }
                     else
-                        infoRows += printfRow("  no    \n");
+                        infoRows += fprintfRow(stdout, "no\n");
                 }
                 else
-                    infoRows += printfRow("        \n");
+                    infoRows += fprintfRow(stdout, "\n");
 
                 // autosave
                 if (config.autosave())
                     saveState(neuralNetwork, *optimizer, infoRows);
             }
 
-            printf("\n");
+            fprintf(stderr, "\n");
 
             if (optimizer->epochsSinceLowestValidationError() == config.maxEpochsNoBest())
-                printf("No new lowest error since %d epochs. Training stopped.\n", config.maxEpochsNoBest());
+                fprintf(stderr, "No new lowest error since %d epochs. Training stopped.\n", config.maxEpochsNoBest());
             else
-                printf("Maximum number of training epochs reached. Training stopped.\n");
+                fprintf(stderr, "Maximum number of training epochs reached. Training stopped.\n");
 
             if (!validationSet->empty())
-                printf("Lowest validation error: %lf\n", optimizer->lowestValidationError());
+                fprintf(stderr, "Lowest validation error: %lf\n", optimizer->lowestValidationError());
             else
-                printf("Final training set error: %lf\n", optimizer->curTrainingError());
-            printf("\n");
+                fprintf(stderr, "Final training set error: %lf\n", optimizer->curTrainingError());
+            fprintf(stderr, "\n");
 
             // save the trained network to the output file
-            printf("Storing the trained network in '%s'... ", config.trainedNetworkFile().c_str());
+            fprintf(stderr, "Storing the trained network in '%s'... ", config.trainedNetworkFile().c_str());
             saveNetwork(neuralNetwork, config.trainedNetworkFile());
-            printf("done.\n");
+            fprintf(stderr, "done.\n");
 
-            std::cout << "Removing cache file(s) ..." << std::endl;
+            std::cerr << "Removing cache file(s) ..." << std::endl;
             if (trainingSet != boost::shared_ptr<data_sets::DataSet>())
                 boost::filesystem::remove(trainingSet->cacheFileName());
             if (validationSet != boost::shared_ptr<data_sets::DataSet>())
@@ -313,7 +316,7 @@ int trainerMain(const Configuration &config)
              //   printf("outputMeans[%d] = %f outputStdevs[%d] = %f\n", i, outputMeans[i], i, outputStdevs[i]);
             bool unstandardize = config.revertStd(); 
             if (unstandardize) {
-                printf("Outputs will be scaled by mean and standard deviation specified in NC file.\n");
+                fprintf(stderr, "Outputs will be scaled by mean and standard deviation specified in NC file.\n");
             }
 
             int output_lag = config.outputTimeLag();
@@ -326,8 +329,8 @@ int trainerMain(const Configuration &config)
                 int fracIdx = 0;
                 boost::shared_ptr<data_sets::DataSetFraction> frac;
                 while (((frac = feedForwardSet->getNextFraction()))) {
-                    printf("Computing outputs for data fraction %d...", ++fracIdx);
-                    fflush(stdout);
+                    fprintf(stderr, "Computing outputs for data fraction %d...", ++fracIdx);
+                    fflush(stderr);
 
                     // compute the forward pass for the current data fraction and extract the outputs
                     neuralNetwork.loadSequences(*frac);
@@ -358,7 +361,7 @@ int trainerMain(const Configuration &config)
                         file << '\n';
                     }
 
-                    printf(" done.\n");
+                    fprintf(stderr, " done.\n");
                 }
 
                 // close the file
@@ -370,8 +373,8 @@ int trainerMain(const Configuration &config)
                 int fracIdx = 0;
                 boost::shared_ptr<data_sets::DataSetFraction> frac;
                 while (((frac = feedForwardSet->getNextFraction()))) {
-                    printf("Computing outputs for data fraction %d...", ++fracIdx);
-                    fflush(stdout);
+                    fprintf(stderr, "Computing outputs for data fraction %d...", ++fracIdx);
+                    fflush(stderr);
 
                     // compute the forward pass for the current data fraction and extract the outputs
                     neuralNetwork.loadSequences(*frac);
@@ -409,7 +412,7 @@ int trainerMain(const Configuration &config)
                         file.close();
                     }
 
-                    printf(" done.\n");
+                    fprintf(stderr, " done.\n");
                 }
             } // format: FORMAT_CSV
 
@@ -418,8 +421,8 @@ int trainerMain(const Configuration &config)
                 int fracIdx = 0;
                 boost::shared_ptr<data_sets::DataSetFraction> frac;
                 while (((frac = feedForwardSet->getNextFraction()))) {
-                    printf("Computing outputs for data fraction %d...", ++fracIdx);
-                    fflush(stdout);
+                    fprintf(stderr, "Computing outputs for data fraction %d...", ++fracIdx);
+                    fflush(stderr);
 
                     // compute the forward pass for the current data fraction and extract the outputs
                     neuralNetwork.loadSequences(*frac);
@@ -481,16 +484,16 @@ int trainerMain(const Configuration &config)
                         }
                     }
 
-                    printf(" done.\n");
+                    fprintf(stderr, " done.\n");
                 }
             }
             if (feedForwardSet != boost::shared_ptr<data_sets::DataSet>()) 
-                std::cout << "Removing cache file: " << feedForwardSet->cacheFileName() << std::endl;
+                std::cerr << "Removing cache file: " << feedForwardSet->cacheFileName() << std::endl;
             boost::filesystem::remove(feedForwardSet->cacheFileName());
         } // evaluation mode
     }
     catch (const std::exception &e) {
-        printf("FAILED: %s\n", e.what());
+        fprintf(stderr, "FAILED: %s\n", e.what());
         return 2;
     }
 
@@ -512,14 +515,14 @@ int main(int argc, const char *argv[])
                 std::cerr << "FAILED: " << cudaGetErrorString(err) << std::endl;
                 return err;
             }
-            std::cout << count << " devices found" << std::endl;
+            std::cerr << count << " devices found" << std::endl;
             cudaDeviceProp prop;
             for (int i = 0; i < count; ++i) {
                 if ((err = cudaGetDeviceProperties(&prop, i)) != cudaSuccess) {
                     std::cerr << "FAILED: " << cudaGetErrorString(err) << std::endl;
                     return err;
                 }
-                std::cout << i << ": " << prop.name << std::endl;
+                std::cerr << i << ": " << prop.name << std::endl;
             }
             return 0;
         }
@@ -533,7 +536,7 @@ int main(int argc, const char *argv[])
             std::cerr << "FAILED: " << cudaGetErrorString(err) << std::endl;
             return err;
         }
-        std::cout << "Using device #" << device << " (" << prop.name << ")" << std::endl;
+        std::cerr << "Using device #" << device << " (" << prop.name << ")" << std::endl;
         if ((err = cudaSetDevice(device)) != cudaSuccess) {
             std::cerr << "FAILED: " << cudaGetErrorString(err) << std::endl;
             return err;
@@ -615,14 +618,14 @@ boost::shared_ptr<data_sets::DataSet> loadDataSet(data_set_type dsType)
         break;
     }
 
-    printf("Loading %s ", type.c_str());
+    fprintf(stderr, "Loading %s ", type.c_str());
     for (std::vector<std::string>::const_iterator fn_itr = filenames.begin();
          fn_itr != filenames.end(); ++fn_itr)
     {
-        printf("'%s' ", fn_itr->c_str());
+        fprintf(stderr, "'%s' ", fn_itr->c_str());
     }
-    printf("...");
-    fflush(stdout);
+    fprintf(stderr, "...");
+    fflush(stderr);
 
     //std::cout << "truncating to " << truncSeqLength << std::endl;
     boost::shared_ptr<data_sets::DataSet> ds = boost::make_shared<data_sets::DataSet>(
@@ -630,51 +633,51 @@ boost::shared_ptr<data_sets::DataSet> loadDataSet(data_set_type dsType)
         Configuration::instance().parallelSequences(), fraction, truncSeqLength, 
         fracShuf, seqShuf, noiseDev, cachePath);
 
-    printf("done.\n");
-    printf("Loaded fraction:  %d%%\n",   (int)(fraction*100));
-    printf("Sequences:        %d\n",     ds->totalSequences());
-    printf("Sequence lengths: %d..%d\n", ds->minSeqLength(), ds->maxSeqLength());
-    printf("Total timesteps:  %d\n",     ds->totalTimesteps());
-    printf("\n");
+    fprintf(stderr, "done.\n");
+    fprintf(stderr, "Loaded fraction:  %d%%\n",   (int)(fraction*100));
+    fprintf(stderr, "Sequences:        %d\n",     ds->totalSequences());
+    fprintf(stderr, "Sequence lengths: %d..%d\n", ds->minSeqLength(), ds->maxSeqLength());
+    fprintf(stderr, "Total timesteps:  %d\n",     ds->totalTimesteps());
+    fprintf(stderr, "\n");
 
     return ds;
 }
 
 
 template <typename TDevice>
-void printLayers(const NeuralNetwork<TDevice> &nn)
+void fprintLayers(FILE * fp, const NeuralNetwork<TDevice> &nn)
 {
     int weights = 0;
 
     for (int i = 0; i < (int)nn.layers().size(); ++i) {
-        printf("(%d) %s ", i, nn.layers()[i]->type().c_str());
-        printf("[size: %d", nn.layers()[i]->size());
+        fprintf(fp, "(%d) %s ", i, nn.layers()[i]->type().c_str());
+        fprintf(fp, "[size: %d", nn.layers()[i]->size());
 
         const layers::TrainableLayer<TDevice>* tl = dynamic_cast<const layers::TrainableLayer<TDevice>*>(nn.layers()[i].get());
         if (tl) {
-            printf(", bias: %.1lf, weights: %d", (double)tl->bias(), (int)tl->weights().size());
+            fprintf(fp, ", bias: %.1lf, weights: %d", (double)tl->bias(), (int)tl->weights().size());
             weights += (int)tl->weights().size();
         }
 
-        printf("]\n");
+        fprintf(fp, "]\n");
     }
 
-    printf("Total weights: %d\n", weights);
+    fprintf(fp, "Total weights: %d\n", weights);
 }
 
 
 template <typename TDevice> 
-void printOptimizer(const Configuration &config, const optimizers::Optimizer<TDevice> &optimizer)
+void fprintOptimizer(FILE * fp, const Configuration &config, const optimizers::Optimizer<TDevice> &optimizer)
 {
     if (dynamic_cast<const optimizers::SteepestDescentOptimizer<TDevice>*>(&optimizer)) {
-        printf("Optimizer type: Steepest descent with momentum\n");
-        printf("Max training epochs:       %d\n", config.maxEpochs());
-        printf("Max epochs until new best: %d\n", config.maxEpochsNoBest());
-        printf("Validation error every:    %d\n", config.validateEvery());
-        printf("Test error every:          %d\n", config.testEvery());
-        printf("Learning rate:             %g\n", (double)config.learningRate());
-        printf("Momentum:                  %g\n", (double)config.momentum());
-        printf("\n");
+        fprintf(fp, "Optimizer type: Steepest descent with momentum\n");
+        fprintf(fp, "Max training epochs:       %d\n", config.maxEpochs());
+        fprintf(fp, "Max epochs until new best: %d\n", config.maxEpochsNoBest());
+        fprintf(fp, "Validation error every:    %d\n", config.validateEvery());
+        fprintf(fp, "Test error every:          %d\n", config.testEvery());
+        fprintf(fp, "Learning rate:             %g\n", (double)config.learningRate());
+        fprintf(fp, "Momentum:                  %g\n", (double)config.momentum());
+        fprintf(fp, "\n");
     }
 }
 
@@ -759,7 +762,7 @@ void restoreState(NeuralNetwork<TDevice> *nn, optimizers::Optimizer<TDevice> *op
 }
 
 
-std::string printfRow(const char *format, ...)
+std::string fprintfRow(FILE * fp, const char *format, ...)
 {
     // write to temporary buffer
     char buffer[100];
@@ -768,9 +771,8 @@ std::string printfRow(const char *format, ...)
     vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
 
-    // print on stdout
-    std::cout << buffer;
-    fflush(stdout);
+    fputs(buffer, fp);
+    fflush(fp);
 
     // return the same string
     return std::string(buffer);
