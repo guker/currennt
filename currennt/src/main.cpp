@@ -48,6 +48,7 @@
 #include <sstream>
 #include <cstdlib>
 #include <iomanip>
+#include <csignal>
 
 
 void swap32 (uint32_t *p)
@@ -92,12 +93,22 @@ template <typename TDevice> void saveState(const NeuralNetwork<TDevice> &nn, con
 template <typename TDevice> void restoreState(NeuralNetwork<TDevice> *nn, optimizers::Optimizer<TDevice> *optimizer, std::string *infoRows);
 std::string fprintfRow(FILE * fp, const char *format, ...);
 
+void catch_signal(int signalNumber){
+	throw(std::runtime_error("Caught SIGINT"));
+}
+
 
 // main function
 template <typename TDevice>
 int trainerMain(const Configuration &config)
 {
+    boost::shared_ptr<data_sets::DataSet> trainingSet    = boost::make_shared<data_sets::DataSet>();
+    boost::shared_ptr<data_sets::DataSet> validationSet  = boost::make_shared<data_sets::DataSet>();
+    boost::shared_ptr<data_sets::DataSet> testSet        = boost::make_shared<data_sets::DataSet>();
+    boost::shared_ptr<data_sets::DataSet> feedForwardSet = boost::make_shared<data_sets::DataSet>();
+
     try {
+        signal(SIGINT, catch_signal);
         // read the neural network description file 
         std::string networkFile = config.continueFile().empty() ? config.networkFile() : config.continueFile();
         fprintf( stderr, "Reading network from '%s'... ", networkFile.c_str());
@@ -108,11 +119,6 @@ int trainerMain(const Configuration &config)
         fprintf( stderr, "\n");
 
         // load data sets
-        boost::shared_ptr<data_sets::DataSet> trainingSet    = boost::make_shared<data_sets::DataSet>();
-        boost::shared_ptr<data_sets::DataSet> validationSet  = boost::make_shared<data_sets::DataSet>();
-        boost::shared_ptr<data_sets::DataSet> testSet        = boost::make_shared<data_sets::DataSet>();
-        boost::shared_ptr<data_sets::DataSet> feedForwardSet = boost::make_shared<data_sets::DataSet>();
-
         if (config.trainingMode()) {
             trainingSet = loadDataSet(DATA_SET_TRAINING);
             
@@ -494,6 +500,15 @@ int trainerMain(const Configuration &config)
     }
     catch (const std::exception &e) {
         fprintf(stderr, "FAILED: %s\n", e.what());
+        std::cerr << "Removing cache file(s) ..." << std::endl;
+        if (trainingSet != boost::shared_ptr<data_sets::DataSet>())
+            boost::filesystem::remove(trainingSet->cacheFileName());
+        if (validationSet != boost::shared_ptr<data_sets::DataSet>())
+            boost::filesystem::remove(validationSet->cacheFileName());
+        if (testSet != boost::shared_ptr<data_sets::DataSet>())
+            boost::filesystem::remove(testSet->cacheFileName());
+        if (feedForwardSet != boost::shared_ptr<data_sets::DataSet>())
+            boost::filesystem::remove(feedForwardSet->cacheFileName());
         return 2;
     }
 
@@ -505,6 +520,9 @@ int main(int argc, const char *argv[])
 {
     // load the configuration
     Configuration config(argc, argv);
+
+    // Crude signal handling
+    //signal(SIGINT, catch_signal);
 
     // run the execution device specific main function
     if (config.useCuda()) {
