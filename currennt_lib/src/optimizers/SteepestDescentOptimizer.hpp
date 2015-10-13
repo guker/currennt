@@ -44,11 +44,13 @@ namespace optimizers {
         const real_t m_learningRate;
         real_t m_learningRateFirst;
         const real_t m_momentum;
+        real_t m_factor;
+	int m_descent;
 
         std::vector<real_vector> m_weightDeltas;
         
     protected:
-        virtual void _updateWeights();
+        virtual void _updateWeights(real_t err);
 
     public:
         /**

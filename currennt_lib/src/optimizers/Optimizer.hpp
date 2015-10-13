@@ -68,15 +68,18 @@ namespace optimizers {
 
     private:
         real_t _processDataSet(data_sets::DataSet &ds, bool calcWeightUpdates, real_t *classError);
-        void _storeWeights();
-        void _restoreWeights();
+        void _restoreWeights(const std::vector<real_vector>& x);
 
     protected:
+        std::vector<real_vector> m_lastWeights;
+
         static void _exportWeights(const helpers::JsonDocument &jsonDoc, const char *arrayName, const std::vector<real_vector> &weights);
         static void _importWeights(const helpers::JsonDocument &jsonDoc, const char *arrayName, std::vector<real_vector> *weights);
         NeuralNetwork<TDevice>& _neuralNetwork();
         const std::vector<real_vector>& _curWeightUpdates() const;
-        virtual void _updateWeights() =0;
+        virtual void _updateWeights(real_t err) =0;
+        void resetWeights();
+        void storeWeights(std::vector<real_vector>& x);
 
     public:
         /**

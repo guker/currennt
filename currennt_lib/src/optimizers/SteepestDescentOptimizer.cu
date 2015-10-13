@@ -40,6 +40,7 @@ namespace {
     {
         real_t learningRate;
         real_t momentum;
+        real_t factor;
 
         const real_t *weights;
         const real_t *weightUpdates;
@@ -48,7 +49,7 @@ namespace {
         __host__ __device__ real_t operator() (const int &weightIdx)
         {
             // calculate and store the weight delta
-            real_t delta = momentum * weightDeltas[weightIdx] - learningRate * weightUpdates[weightIdx];
+            real_t delta = momentum * weightDeltas[weightIdx] - learningRate * factor * weightUpdates[weightIdx];
             weightDeltas[weightIdx] = delta;
 
             // calculate the new weight
@@ -65,11 +66,33 @@ namespace {
 namespace optimizers {
 
     template <typename TDevice>
-    void SteepestDescentOptimizer<TDevice>::_updateWeights()
+    void SteepestDescentOptimizer<TDevice>::_updateWeights(real_t err)
     {
         internal::UpdateWeightFn updateWeightFn;
         updateWeightFn.momentum     = m_momentum;
 
+        if(!isfinite(err)){
+            this->resetWeights();
+            for (size_t i = 0; i < m_weightDeltas.size(); ++i)
+                thrust::fill(m_weightDeltas[i].begin(), m_weightDeltas[i].end(), 0.0);
+            m_factor *= 0.1;
+            return;
+        }
+        this->storeWeights(this->m_lastWeights);
+        if(err > this->curTrainingError()){
+            m_descent = 0;
+            m_factor /= 1.2;
+        } else {
+            if(m_descent>=5){
+               m_factor *= 1.2;
+               m_descent = 0;
+            }
+            m_descent++;
+        }
+           
+         
+
+        updateWeightFn.factor = m_factor;
         for (size_t i = 1; i < this->_neuralNetwork().layers().size()-1; ++i) {
         	layers::TrainableLayer<TDevice> *layer = dynamic_cast<layers::TrainableLayer<TDevice>*>(this->_neuralNetwork().layers()[i].get());
             if (!layer)
@@ -102,6 +125,8 @@ namespace optimizers {
         , m_learningRate    (learningRate)
         , m_learningRateFirst(learningRate)
         , m_momentum        (momentum)
+        , m_factor          (1.0)
+        , m_descent         (0)
     {
         // intialize the weight deltas vectors with zeros
         m_weightDeltas = this->_curWeightUpdates();

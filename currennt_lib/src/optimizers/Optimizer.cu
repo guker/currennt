@@ -26,6 +26,7 @@
 #include "../layers/MulticlassClassificationLayer.hpp"
 #include "../Configuration.hpp"
 #include "../helpers/JsonClasses.hpp"
+#include "../helpers/getRawPointer.cuh"
 
 #include <limits>
 
@@ -111,8 +112,9 @@ namespace optimizers {
                 }
 
                 // update weights for hybrid online/batch learning
-                if (Configuration::instance().hybridOnlineBatch())
-                    _updateWeights();
+                if (Configuration::instance().hybridOnlineBatch()){
+                    _updateWeights(error);
+                }
             }
 
             firstFraction = false;
@@ -126,13 +128,15 @@ namespace optimizers {
             thrust::transform(layer->weights().begin(), layer->weights().end(), m_curWeightUpdates[i].begin(), m_curWeightUpdates[i].begin(), thrust::elasticnet_dfunctor<real_t>(m_alpha, m_beta));
             error += thrust::transform_reduce(layer->weights().begin(), layer->weights().end(), thrust::elasticnet_functor<real_t>(m_alpha, m_beta), 0.0, thrust::plus<real_t>());
         }
-        // update weights for batch learning
-        if (calcWeightUpdates && !Configuration::instance().hybridOnlineBatch())
-            _updateWeights();
 
         // normalize the errors
         error /= ds.totalSequences();
         *classError /= (real_t)ds.totalTimesteps();
+
+        // update weights for batch learning
+        if (calcWeightUpdates && !Configuration::instance().hybridOnlineBatch()){
+            _updateWeights(error);
+        }
 
         return error;
     }
@@ -183,24 +187,33 @@ namespace optimizers {
     }
 
     template <typename TDevice>
-    void Optimizer<TDevice>::_storeWeights()
+    void Optimizer<TDevice>::storeWeights(std::vector<real_vector>& x)
     {
         for (size_t i = 1; i < m_neuralNetwork.layers().size() - 1; ++i) {
             layers::TrainableLayer<TDevice> *layer = dynamic_cast<layers::TrainableLayer<TDevice>*>(m_neuralNetwork.layers()[i].get());
-            if (layer) 
-            	thrust::copy(layer->weights().begin(), layer->weights().end(), m_bestWeights[i].begin());
+            if (layer){
+            	thrust::copy(layer->weights().begin(), layer->weights().end(), x[i].begin());
+            }
         }
     }
 
     template <typename TDevice>
-    void Optimizer<TDevice>::_restoreWeights()
+    void Optimizer<TDevice>::_restoreWeights(const std::vector<real_vector>& x)
     {
         for (size_t i = 1; i < m_neuralNetwork.layers().size() - 1; ++i) {
-        	layers::TrainableLayer<TDevice> *layer = dynamic_cast<layers::TrainableLayer<TDevice>*>(m_neuralNetwork.layers()[i].get());
-            if (layer)
-            	thrust::copy(m_bestWeights[i].begin(), m_bestWeights[i].end(), layer->weights().begin());
+            layers::TrainableLayer<TDevice> *layer = dynamic_cast<layers::TrainableLayer<TDevice>*>(m_neuralNetwork.layers()[i].get());
+            if (layer){
+            	thrust::copy(x[i].begin(), x[i].end(), layer->weights().begin());
+            }
         }
     }
+
+    template <typename TDevice>
+    void Optimizer<TDevice>::resetWeights(void)
+    {
+        _restoreWeights(m_lastWeights);
+    }
+
 
     template <typename TDevice>
     NeuralNetwork<TDevice>& Optimizer<TDevice>::_neuralNetwork()
@@ -240,12 +253,15 @@ namespace optimizers {
         , m_alpha                     (alpha)
         , m_beta                      (beta)
     {
-        // initialize the best weights vectors
+        // initialize the last and best weights vectors
+        m_lastWeights.resize(m_neuralNetwork.layers().size());
         m_bestWeights.resize(m_neuralNetwork.layers().size());
         for (size_t i = 1; i < m_neuralNetwork.layers().size()-1; ++i) {
-        	layers::TrainableLayer<TDevice> *layer = dynamic_cast<layers::TrainableLayer<TDevice>*>(m_neuralNetwork.layers()[i].get());
-            if (layer)
+       	    layers::TrainableLayer<TDevice> *layer = dynamic_cast<layers::TrainableLayer<TDevice>*>(m_neuralNetwork.layers()[i].get());
+            if (layer){
+                m_lastWeights[i] = layer->weights();
                 m_bestWeights[i] = layer->weights();
+            }
         }
 
         // initialize the current weight updates vectors
@@ -334,7 +350,7 @@ namespace optimizers {
                     m_lowestValidationError  = m_curValidationError;
                     m_epochsSinceLowestError = 0;
 
-                    _storeWeights();
+                    storeWeights(m_bestWeights);
                 }
                 else {
                     m_epochsSinceLowestError += m_validateEvery;
@@ -342,7 +358,7 @@ namespace optimizers {
             }
             else if (m_validationSet.empty()) {
                 m_epochsSinceLowestError = 0;
-                _storeWeights();
+                storeWeights(m_bestWeights);
             }
 
             // calculate the test error
@@ -352,7 +368,7 @@ namespace optimizers {
             // check if we did not get a new lowest error for some training epochs 
             // or if we reached the maximum number of training epochs
             if (m_epochsSinceLowestError >= m_maxEpochsNoBest || (m_maxEpochs >= 0 && m_curEpoch >= m_maxEpochs)) {
-                _restoreWeights();
+                _restoreWeights(m_bestWeights);
                 m_finished = true;
             }
         }
