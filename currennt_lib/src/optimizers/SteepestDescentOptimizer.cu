@@ -71,7 +71,7 @@ namespace optimizers {
         internal::UpdateWeightFn updateWeightFn;
         updateWeightFn.momentum     = m_momentum;
 
-        if(!isfinite(err)){
+        if(!isfinite(err) || err > 1.05 * this->curTrainingError()){
             this->resetWeights();
             for (size_t i = 0; i < m_weightDeltas.size(); ++i)
                 thrust::fill(m_weightDeltas[i].begin(), m_weightDeltas[i].end(), 0.0);
@@ -85,7 +85,7 @@ namespace optimizers {
             for (size_t i = 0; i < m_weightDeltas.size(); ++i)
                 thrust::fill(m_weightDeltas[i].begin(), m_weightDeltas[i].end(), 0.0);
         } else {
-            if(m_descent>=5){
+            if(m_descent>=3){
                m_factor *= 1.2;
                m_descent = 0;
             }
