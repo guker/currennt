@@ -58,6 +58,17 @@ namespace thrust {
             }
     };
 
+    template <typename floatT>
+    struct cap_functor {
+        const floatT a;
+        cap_functor(floatT _a) : a(_a) {}
+
+        __host__ __device__
+            floatT operator()(const floatT& x) const {
+                return copysign((isfinite(x) && fabs(x)<a)?x:a,x);
+            }
+    };
+
 }
 
 namespace optimizers {
@@ -127,6 +138,14 @@ namespace optimizers {
                 continue;
             thrust::transform(layer->weights().begin(), layer->weights().end(), m_curWeightUpdates[i].begin(), m_curWeightUpdates[i].begin(), thrust::elasticnet_dfunctor<real_t>(m_alpha, m_beta));
             error += thrust::transform_reduce(layer->weights().begin(), layer->weights().end(), thrust::elasticnet_functor<real_t>(m_alpha, m_beta), 0.0, thrust::plus<real_t>());
+        }
+
+        // Squash large gradients
+        for (size_t i = 1; i < m_neuralNetwork.layers().size()-1; ++i) {
+            layers::TrainableLayer<TDevice> *layer = dynamic_cast<layers::TrainableLayer<TDevice>*>(m_neuralNetwork.layers()[i].get());
+            if (!layer)
+                continue;
+            thrust::transform(m_curWeightUpdates[i].begin(), m_curWeightUpdates[i].end(), m_curWeightUpdates[i].begin(), thrust::cap_functor<real_t>((real_t)1e4));
         }
 
         // normalize the errors

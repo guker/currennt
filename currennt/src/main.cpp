@@ -521,9 +521,6 @@ int main(int argc, const char *argv[])
     // load the configuration
     Configuration config(argc, argv);
 
-    // Crude signal handling
-    //signal(SIGINT, catch_signal);
-
     // run the execution device specific main function
     if (config.useCuda()) {
         int count;

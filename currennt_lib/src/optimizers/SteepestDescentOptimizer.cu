@@ -82,6 +82,8 @@ namespace optimizers {
         if(err > this->curTrainingError()){
             m_descent = 0;
             m_factor /= 1.2;
+            for (size_t i = 0; i < m_weightDeltas.size(); ++i)
+                thrust::fill(m_weightDeltas[i].begin(), m_weightDeltas[i].end(), 0.0);
         } else {
             if(m_descent>=5){
                m_factor *= 1.2;
