@@ -57,6 +57,10 @@ layers::Layer<TDevice>* LayerFactory<TDevice>::createLayer(
     	return new FeedForwardLayer<TDevice, Logistic>(layerChild, weightsSection, *precedingLayer);
     else if (layerType == "feedforward_identity")
     	return new FeedForwardLayer<TDevice, Identity>(layerChild, weightsSection, *precedingLayer);
+    else if (layerType == "feedforward_rectifier")
+	return new FeedForwardLayer<TDevice, Rectifier>(layerChild, weightsSection, *precedingLayer);
+    else if (layerType == "feedforward_softplus")
+        return new FeedForwardLayer<TDevice, Softplus>(layerChild, weightsSection, *precedingLayer);
     else if (layerType == "softmax")
     	return new SoftmaxLayer<TDevice, Identity>(layerChild, weightsSection, *precedingLayer);
     else if (layerType == "lstm")

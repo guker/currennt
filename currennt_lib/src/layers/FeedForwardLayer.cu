@@ -30,6 +30,8 @@
 #include "../activation_functions/Tanh.cuh"
 #include "../activation_functions/Logistic.cuh"
 #include "../activation_functions/Identity.cuh"
+#include "../activation_functions/Rectifier.cuh"
+#include "../activation_functions/Softplus.cuh"
 
 #include <thrust/transform.h>
 #include <thrust/for_each.h>
@@ -133,6 +135,10 @@ namespace layers {
                 s = "feedforward_logistic";
             else if (typeid(TActFn) == typeid(activation_functions::Identity))
                 s = "feedforward_identity";
+	    else if (typeid(TActFn) == typeid(activation_functions::Softplus))
+		s = "feedforward_softplus";
+	    else if (typeid(TActFn) == typeid(activation_functions::Rectifier))
+		s = "feedforward_rectifier";
             else
                 throw std::runtime_error("Unsupported activation function");
         }
@@ -231,5 +237,10 @@ namespace layers {
     template class FeedForwardLayer<Gpu, activation_functions::Logistic>;
     template class FeedForwardLayer<Cpu, activation_functions::Identity>;
     template class FeedForwardLayer<Gpu, activation_functions::Identity>;
+    template class FeedForwardLayer<Cpu, activation_functions::Rectifier>;
+    template class FeedForwardLayer<Gpu, activation_functions::Rectifier>;
+    template class FeedForwardLayer<Cpu, activation_functions::Softplus>;
+    template class FeedForwardLayer<Gpu, activation_functions::Softplus>;
+
 
 } // namespace layers
