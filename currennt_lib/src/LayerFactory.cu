@@ -36,6 +36,8 @@
 #include "activation_functions/Tanh.cuh"
 #include "activation_functions/Logistic.cuh"
 #include "activation_functions/Identity.cuh"
+#include "activation_functions/Rectifier.cuh"
+#include "activation_functions/Softplus.cuh"
 
 #include <stdexcept>
 

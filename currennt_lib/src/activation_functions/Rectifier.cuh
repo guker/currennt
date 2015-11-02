@@ -37,7 +37,7 @@ namespace activation_functions {
 
         static __host__ __device__ real_t deriv(real_t y)
         {
-            return (x>0.0);
+            return (y>0.0);
         }
     };
 
