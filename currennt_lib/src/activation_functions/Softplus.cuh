@@ -32,11 +32,16 @@ namespace activation_functions {
     {
         static __host__ __device__ real_t fn(real_t x)
         {
+	    /*  Two cases for stability, separating the x large and small
+	        cases:   x >> 0   f(x) = x + log1p(exp(-x))
+		         x << 0   f(x) = log1p(exp(x))
+	     */
             if (x < helpers::NumericLimits<real_t>::expLimit()) {
+                if( x > 0)
+		    return x + (real_t)log1p(exp(-x));
                 if (x > -helpers::NumericLimits<real_t>::expLimit())
                     return (real_t)log1p(exp(x));
-                else
-                    return 0;
+                return 0.0;
             }
             
             return x;
@@ -44,7 +49,12 @@ namespace activation_functions {
 
         static __host__ __device__ real_t deriv(real_t y)
         {
-            return (real_t)1.0 / (1.0 + exp(-y));
+	    if (x < helpers::NumericLimits<real_t>::expLimit()) {
+                if (x > -helpers::NumericLimits<real_t>::expLimit())
+                    return (real_t)1.0 / (real_t)(1.0 + exp(-y));
+		return 0.0;
+	    }
+	    return 1.0;
         }
     };
 
