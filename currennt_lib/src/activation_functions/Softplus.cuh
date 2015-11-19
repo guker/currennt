@@ -49,8 +49,8 @@ namespace activation_functions {
 
         static __host__ __device__ real_t deriv(real_t y)
         {
-	    if (x < helpers::NumericLimits<real_t>::expLimit()) {
-                if (x > -helpers::NumericLimits<real_t>::expLimit())
+	    if (y < helpers::NumericLimits<real_t>::expLimit()) {
+                if (y > -helpers::NumericLimits<real_t>::expLimit())
                     return (real_t)1.0 / (real_t)(1.0 + exp(-y));
 		return 0.0;
 	    }
