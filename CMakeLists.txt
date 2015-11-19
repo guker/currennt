@@ -3,7 +3,7 @@ PROJECT(currennt)
 CMAKE_MINIMUM_REQUIRED (VERSION 2.8)
 
 FIND_PACKAGE (CUDA)
-FIND_PACKAGE (Boost 1.48.0 REQUIRED COMPONENTS program_options system filesystem random thread  REQUIRED)
+FIND_PACKAGE (Boost 1.50.0 REQUIRED COMPONENTS program_options system filesystem random thread  REQUIRED)
 
 INCLUDE_DIRECTORIES (${Boost_INCLUDE_DIR})
 
