@@ -8,7 +8,7 @@ SEDI      = sed -i
 BUILD     = build
 CURRENNT  = $(BUILD)/currennt
 
-deb:
+deb: $(CURRENNT)
 	mkdir -p tmp/usr/local/bin
 	mkdir -p tmp/DEBIAN
 	cp deb-src/control.tmpl tmp/DEBIAN/control
