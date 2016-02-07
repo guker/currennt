@@ -1,0 +1,3 @@
+ont-currennt (1.0) stable; urgency=low
+
+    * Fixed up bit rot in source and changed cuda compute settings for AWS
