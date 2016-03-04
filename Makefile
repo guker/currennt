@@ -1,3 +1,17 @@
+# .deb build procedure (Ubuntu 14.04)
+# -----------------------------------
+# prerequisite packages:
+# apt-get install git cmake build-essential libboost-all-dev libnetcdf-dev
+#
+# NVIDIA CUDA environment
+# wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/cuda-repo-ubuntu1404_7.5-18_amd64.deb
+# dpkg -i cuda-repo-ubuntu1404-7-5-local_7.5-18_amd64.deb
+# apt-get clean ; apt-get update ; apt-get install -y cuda
+#
+# Oxford Nanopore Technologies' CURRENNT Git repo:
+# git clone https://github.com/nanoporetech/currennt.git
+# make deb
+#
 PACKAGE  ?= ont-currennt
 MAJOR    ?= 0
 MINOR    ?= 2
