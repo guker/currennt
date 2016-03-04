@@ -1,5 +1,5 @@
 Package: PACKAGE
-Version: MAJOR.MINOR-PATCH~CODENAME
+Version: MAJOR.MINOR.SUB-PATCH~CODENAME
 Section: base
 Priority: optional
 Architecture: amd64
