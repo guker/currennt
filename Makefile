@@ -6,7 +6,7 @@
 # NVIDIA CUDA environment
 # wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/cuda-repo-ubuntu1404_7.5-18_amd64.deb
 # sudo dpkg -i cuda-repo-ubuntu1404-7-5-local_7.5-18_amd64.deb
-# sudo apt-get clean ; sudo apt-get update ; sudo apt-get install -y cuda
+# sudo apt-get clean ; sudo apt-get update ; sudo apt-get install -y cuda-cudart-7-5 cuda-cublas-7-5
 #
 # Oxford Nanopore Technologies' CURRENNT Git repo:
 # git clone https://github.com/nanoporetech/currennt.git

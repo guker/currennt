@@ -51,6 +51,31 @@ You might get many warnings like 'Cannot tell what pointer points to, assuming
 global memory space'. These are totally OK and there seems to be no way to
 suppress them.
 
++=============================================================================+
+| 1a. Binary installation on Linux                                            |
++=============================================================================+
+A .deb package can be built on Linux by executing the following:
+#> cd currennt
+#> make develop
+
+The resulting package will depend on the following packages:
+cuda-cudart-7-5,cuda-cublas-7-5,netcdf-bin,libboost-all-dev
+
+The final two here are generally available in standard OS repositories. To 
+obtain the CUDA dependencies one must first setup the NVIDIA CUDA repositories.
+From https://developer.nvidia.com/cuda-downloads obtain the network installer
+for your OS and install it. For example for Ubuntu 14.04 download 
+cuda-repo-ubuntu1404_7.5-18_amd64.deb and execute
+#> sudo dpkg -i cuda-repo-ubuntu1404_7.5-18_amd64.deb
+#> sudo apt-get update
+
+One can now install execute
+#> sudo apt-get install -y cuda-cudart-7-5,cuda-cublas-7-5
+
+to install the required dependencies, and finally
+#> sudo dpkg -i ont-currennt*deb
+
+to install currennt.
 
 +=============================================================================+
 | 2. Building on Windows                                                      |
