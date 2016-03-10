@@ -27,6 +27,8 @@ deb:
 	mkdir build && cd build && cmake .. && make && strip currennt
 	mkdir -p tmp/usr/bin tmp/DEBIAN tmp/usr/share/doc/ont-currennt
 	cp deb-src/control.t tmp/DEBIAN/control
+	cp deb-src/postinst tmp/DEBIAN/postinst
+	cp deb-src/postrm tmp/DEBIAN/postrm
 	$(SEDI) "s/PACKAGE/$(PACKAGE)/g"   tmp/DEBIAN/control
 	$(SEDI) "s/MAJOR/$(MAJOR)/g"       tmp/DEBIAN/control
 	$(SEDI) "s/MINOR/$(MINOR)/g"       tmp/DEBIAN/control

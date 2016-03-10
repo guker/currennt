@@ -1,0 +1,2 @@
+rm -rf /etc/ld.so.conf.d/ont-current-cuda.conf
+ldconfig
