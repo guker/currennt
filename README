@@ -34,7 +34,7 @@ Toolkit", Journal of Machine Learning Research, 2014.
 | 1. Building on Linux                                                        |
 +=============================================================================+
 Building on Linux requires the following:
-* CUDA Toolkit 5.0
+* CUDA Toolkit 7.5
 * GCC 4.6 or higher
 * NetCDF scientific data library
 * Boost library 1.48 or higher
@@ -81,16 +81,16 @@ to install currennt.
 | 2. Building on Windows                                                      |
 +=============================================================================+
 Building on Windows requires the following:
-* Visual Studio 2010
-* CUDA Toolkit 5.0
-* Boost library 1.52.0 or higher
+* Visual Studio 2013 Update 5 (Visual Studio 2015 is not supported)
+* CUDA Toolkit 7.5
+* Boost library 1.55.0
 
 The NetCDF sources and required DLLs are already there, so you do not have to
-download them yourself.
+download them yourself. Precompiled boost libraries are also available.
 
 To build CURRENNT do the following:
-1) Open 'currennt.sln' in Visual Studio 2010
-2) Ensure that you installed the Boost library in 'C:/boost_1_52_0'. 
+1) Open 'currennt.sln' in Visual Studio 2013
+2) Ensure that you installed the Boost library in 'C:/boost_1_55_0'. 
    NOTE: If you build Boost from source, make sure you build the x64 version
    (default is x86). This is done via
      bjam msvc architecture=x86 address-model=64 stage
@@ -101,7 +101,7 @@ To build CURRENNT do the following:
    project settings or you can edit the project files directly which is much
    simpler. To do this, open the files 'currennt_lib/currennt_lib.vcxproj'
    and 'currennt/currennt.vcxproj' and replace every occurence of
-   'C:/boost_1_52_0' with the path (may be a relative path) to your Boost
+   'C:/boost_1_55_0' with the path (may be a relative path) to your Boost
    installation.
 3) Ensure that the solution configuration is set to 'Release' on 'x64' (in the
    toolbar right below the main menu)
