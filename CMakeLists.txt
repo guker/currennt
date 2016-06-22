@@ -12,6 +12,7 @@ LINK_DIRECTORIES (${Boost_LIBRARY_DIR})
 SET (CMAKE_BUILD_TYPE Release)
 SET (CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -arch compute_30")
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-security")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FORCE_INLINES")
 
 FILE (GLOB_RECURSE src_lib     currennt_lib/*.cpp currennt_lib/*.hpp     currennt_lib/*.h     currennt_lib/*.cu     currennt_lib/*.cuh)
 FILE (GLOB_RECURSE src_trainer currennt/*.cpp     currennt/*.hpp         currennt/*.h         currennt/*.cu         currennt/*.cuh)

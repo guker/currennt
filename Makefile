@@ -8,13 +8,17 @@ SEDI      = sed -i
 BUILD     = build
 CURRENNT  = $(BUILD)/currennt
 
-deb: $(CURRENNT)
-	mkdir -p tmp/usr/local/bin
-	mkdir -p tmp/DEBIAN
-	cp deb-src/control.tmpl tmp/DEBIAN/control
-	$(SEDI) "s/MAJOR/$(MAJOR)/g" tmp/DEBIAN/control
-	$(SEDI) "s/MINOR/$(MINOR)/g" tmp/DEBIAN/control
-	$(SEDI) "s/PATCH/$(PATCH)/g" tmp/DEBIAN/control
+deb:
+	#touch tmp
+	#rm -rf tmp build *.deb
+	#mkdir build && cd build && cmake .. && make && strip currennt
+	mkdir -p tmp/usr/bin tmp/DEBIAN tmp/usr/share/doc/ont-currennt
+	cp deb-src/control.t tmp/DEBIAN/control
+	$(SEDI) "s/PACKAGE/$(PACKAGE)/g"   tmp/DEBIAN/control
+	$(SEDI) "s/MAJOR/$(MAJOR)/g"       tmp/DEBIAN/control
+	$(SEDI) "s/MINOR/$(MINOR)/g"       tmp/DEBIAN/control
+	$(SEDI) "s/SUB/$(SUB)/g"           tmp/DEBIAN/control
+	$(SEDI) "s/PATCH/$(PATCH)/g"       tmp/DEBIAN/control
 	$(SEDI) "s/CODENAME/$(CODENAME)/g" tmp/DEBIAN/control
 	cp $(BUILD)/currennt tmp/usr/local/bin
 	(cd tmp; fakeroot dpkg -b . ../currennt-$(MAJOR).$(MINOR)-$(PATCH)~$(CODENAME).deb)
