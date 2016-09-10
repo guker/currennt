@@ -1,0 +1,2 @@
+echo "/usr/local/cuda-7.5/targets/x86_64-linux/lib/" > /etc/ld.so.conf.d/ont-current-cuda.conf
+ldconfig
